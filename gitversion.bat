@@ -10,108 +10,62 @@ IF %PROCESSOR_ARCHITECTURE% == x86 (
     set git_bin="%ProgramFiles%\git\bin"
   )
 ) ELSE IF %PROCESSOR_ARCHITECTURE% == AMD64 (
-    set git_bin="%ProgramFiles(x86)%\git\bin"
-    ) ELSE (
+  :: set git_bin="%ProgramFiles(x86)%\git\bin"
+  set git_bin="%ProgramFiles%\git\bin"
+) ELSE (
   set git_bin="%ProgramFiles%\git\bin"
 )
-:: Remove qoutes
+:: Remove quotes
 SET git_bin=!git_bin:"=!
 :: " quote to make Sublime Text happy...
 
-@echo ------------------------------------
-@echo    Git version processing
-@echo ------------------------------------
+:: verify if the sed command is available
+sed -V 1> nul
+IF %ERRORLEVEL% NEQ 0 (
+  REM @echo ===---------------------------------------------------------------------------------===
+  @echo   ERROR: No sed command found. Please install it from https://unxutils.sourceforge.net/ 
+  REM @echo ===---------------------------------------------------------------------------------===
+  SET exit_code=1
+  GOTO FINITO
+)
+
+::@echo --------------------------------------
+::@echo    Git version processing
+::@echo --------------------------------------
 :: Preprocessing parameters
 
 :: Preprocessing parameter 1
-:1
 IF [%1] EQU [] (
-  @echo ===-------------------------------------------===----------
-  @echo   ERROR: Missing Git repo directory 
-  @echo ===-------------------------------------------===
-  SET exit_code=1
-  GOTO USAGE
+  SET root_dir=.
+) ELSE (
+  SET root_dir=%1
 )
+
 :: verify that .git exists within given directory
-IF EXIST %1 (
-  "!git_bin!\git.exe" describe --tags
+IF EXIST %root_dir% (
+  CD /d %root_dir%
+  "!git_bin!\git.exe" describe --tags 1>nul
   IF %ERRORLEVEL% NEQ 0 (
-    @echo ===-------------------------------------------===
+    REM @echo ===------------------------------------------------------------===
     @echo   ERROR: No git repository in given directory.
-    @echo ===-------------------------------------------===
+    REM @echo ===------------------------------------------------------------===
     SET exit_code=1
     GOTO FINITO
   )
 ) ELSE (
-  @echo ===-------------------------------------------===
+  REM @echo ===------------------------------------------------------------===
   @echo   ERROR: Missing Git repo directory 
-  @echo ===-------------------------------------------===
+  REM @echo ===------------------------------------------------------------===
   SET exit_code=1
   GOTO USAGE
 )
 
-:: Preprocessing parameter 2
-:2
-IF [%2] EQU [] (
-  @echo ===-------------------------------------------===
-  @echo   ERROR: Missing Input filename 
-  @echo ===-------------------------------------------===
-  SET exit_code=1
-  GOTO USAGE
-)
-
-:: verify that input file exists
-IF NOT EXIST %2 (
-  @echo ===-------------------------------------------===
-  @echo   ERROR: Input file does not exist
-  @echo ===-------------------------------------------===
-  SET exit_code=1
-  GOTO FINITO
-)
-
-:: Preprocessing parameter 3
-:3
-IF [%3] EQU [] (
-  @echo ===-------------------------------------------===
-  @echo   ERROR: Missing Output filename 
-  @echo ===-------------------------------------------===
-  SET exit_code=1
-  GOTO USAGE
-)
-:: if output file exists, just warn about it
-IF EXIST %3 (
-  @echo ===-------------------------------------------===
-  @echo   WARN: output file exists... will overwrite!
-  @echo ===-------------------------------------------===
-)
-
-:: Check that input != output
-IF [%3] EQU [%2] (
-  @echo ===-------------------------------------------===
-  @echo   ERROR: Input and ouput filename is equal.
-  @echo ===-------------------------------------------===
-  SET exit_code=1
-  GOTO FINITO
- )
-GOTO PROCESSING
-
-:GO_FOLDER_UP_IF_NOT_ROOT
-
-:PROCESSING
-@echo ------------------------------------------------------------------------------------------
-@echo - Updating git version
-@echo -   Using git repository : %1
-@echo -   using input file     : %2
-@echo -   output to file       : %3
-@echo ------------------------------------------------------------------------------------------
-
-
-CD /d %1
+@echo -------------------------------------------------------------------------------------------
 :: To get latest abbriviated hash from git
 :: git log -n 1  --pretty="format:%h"
 :: To get current tag
 :: git describe --tags
-:: git describe --tags --long | sed "s/v\([0-9]*\).*/\1/"'
+:: git describe --tags --long | sed "s/v\([0-9]*\).*/\1/"
 
 FOR /F "tokens=1 delims=" %%A in ('"!git_bin!\git.exe" describe --tags --long') do SET current_tag=%%A
 ::!current_tag! 
@@ -126,39 +80,108 @@ FOR /F "tokens=1 delims=" %%A in ('"!git_bin!\git.exe" describe !tag_only! --tag
 FOR /F "tokens=1 delims=" %%A in ('echo !git_tag_complete_with_hash! ^| sed "s/v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\(.*\)/\1/"') do SET git_tag_hash=%%A
 SET git_tag_hash=!git_tag_hash: =!
 
-@echo   Tag Only:          !tag_only!
-@echo   Current Tag:       !current_tag!
-@echo   Major Version:     !major_version!
-@echo   Minor Version:     !minor_version!
-@echo   Revision:          !revision!
-@echo   Commits since tag: !commits_since_tag!
-@echo   Git Hash:          !git_hash!
-@echo   Git Tag Hash:      !git_tag_hash!
+IF %commits_since_tag% == 0 (
+  set git_commits=
+) ELSE (
+  set git_commits=+%commits_since_tag%
+)
+
+@echo * Tags replaced in input file:
+@echo   $MAJOR_VERSION$:     !major_version!
+@echo   $MINOR_VERSION$:     !minor_version!
+@echo   $REVISION$:          !revision!
+@echo   $GIT_TAG_ONLY$:      !tag_only!
+@echo   $GIT_TAG_HASH$:      !git_tag_hash!
+@echo   $COMMITS_SINCE_TAG$: !commits_since_tag!
+@echo   $GIT_CURRENT_TAG$:   !current_tag!
+@echo   $GIT_CURRENT_HASH$:  !git_hash!
+@echo   $GIT_COMMITS_FLAG$:  !git_commits!
+@echo - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+:: skip the file transformation if no more parameters
+IF [x%2x] == [xx] IF [x%3x] == [xx] GOTO FINITO
+
+:: Preprocessing parameter 2
+IF [%2] NEQ [] (
+  :: verify that input file exists
+  IF NOT EXIST %2 (
+    REM @echo ===------------------------------------------------------------===
+    @echo   ERROR: Input file does not exist
+    REM @echo ===------------------------------------------------------------===
+    SET exit_code=1
+    GOTO FINITO
+  )
+)
+
+:: Preprocessing parameter 3
+IF [%3] NEQ [] (
+  :: Check that input != output
+  IF [%3] EQU [%2] (
+    REM @echo ===------------------------------------------------------------===
+    @echo   ERROR: Input and ouput filename is equal.
+    REM @echo ===------------------------------------------------------------===
+    SET exit_code=1
+    GOTO FINITO
+  )
+) ELSE (
+  REM @echo ===------------------------------------------------------------===
+  @echo   ERROR: Missing the outputfile parameter.
+  REM @echo ===------------------------------------------------------------===
+  SET exit_code=1
+  GOTO USAGE
+)
+
+
+@echo * Updating git version
+@echo -   Using git repository : !root_dir!
+@echo -   using input file     : %2
+@echo -   output to file       : %3
+
+:: if output file exists, just warn about it
+IF EXIST %3 (
+  REM @echo ===------------------------------------------------------------===
+  @echo WARNING: output file exists... will overwrite it
+  REM @echo ===------------------------------------------------------------===
+)
 
 :: Replace parameters in file using sed
-popd
-sed -e "s/\$MAJOR_VERSION\$/!major_version!/g" -e "s/\$MINOR_VERSION\$/!minor_version!/g" -e "s/\$REVISION\$/!revision!/g" -e "s/\$COMMITS_SINCE_TAG\$/!commits_since_tag!/g" -e "s/\$GIT_TAG_HASH\$/!git_tag_hash!/g" -e "s/\$GIT_HASH\$/!git_hash!/g" <%2 >%3
-pushd .
+sed ^
+	-e "s/\$MAJOR_VERSION\$/!major_version!/g" ^
+	-e "s/\$MINOR_VERSION\$/!minor_version!/g" ^
+	-e "s/\$REVISION\$/!revision!/g" ^
+	-e "s/\$GIT_TAG_ONLY\$/!tag_only!/g" ^
+	-e "s/\$GIT_TAG_HASH\$/!git_tag_hash!/g" ^
+	-e "s/\$COMMITS_SINCE_TAG\$/!commits_since_tag!/g" ^
+	-e "s/\$GIT_CURRENT_TAG\$/!current_tag!/g" ^
+	-e "s/\$GIT_CURRENT_HASH\$/!git_hash!/g" ^
+	-e "s/\$GIT_COMMITS_FLAG\$/!git_commits!/g" ^
+	<%2 >%3
+
+@echo -------------------------------------------------------------------------------------------
 
 GOTO FINITO
 
 :USAGE
-@echo --------------------------------------------------------------------------------------
-@echo  usage: gitversion.bat folder_with_git_repo inputfile outputfile
+@echo -------------------------------------------------------------------------------------------
+@echo  usage: gitversion.bat [folder_with_git_repo [inputfile outputfile]]
 @echo  example: gitversion.bat c:\my_git_repo version_input.h version.h
-@echo -
+@echo  -
 @echo  Important note: This expects tags to be in format: Anything else won't work. 
 @echo  v1.0.123 where 1 is major, 0 is minor and 123 is revision
+@echo  The sed command needs to be available in the PATH
 @echo  -
-@echo  parameters replaced in input file:
+@echo  Tags replaced in input file:
 @echo     $MAJOR_VERSION$     - the major version number
 @echo     $MINOR_VERSION$     - the minor version number
 @echo     $REVISION$          - the revision number
+@echo     $GIT_TAG_ONLY$      - only the last git tag
+@echo     $GIT_TAG_HASH$      - git hash for the last git tag
 @echo     $COMMITS_SINCE_TAG$ - number of commits since last tag
-@echo     $GIT_TAG_HASH$      - git hash for the tag
-@echo     $GIT_HASH$          - the current git hash 
-@echo                          (will be same as GIT_HASH if the current tag is checked out)
-@echo --------------------------------------------------------------------------------------
+@echo     $GIT_CURRENT_TAG$   - git current tag
+@echo     $GIT_CURRENT_HASH$  - the current git tag hash 
+@echo                           (will be same as GIT_TAG_HASH if the current tag is checked out)
+@echo     $GIT_COMMITS_FLAG$  - Empty or +number_of_commits_since_last_tag
+@echo -------------------------------------------------------------------------------------------
 
 :FINITO
 EndLocal&SET exit_code=!exit_code!

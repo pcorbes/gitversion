@@ -1,0 +1,12 @@
+// DO NOT MANUALLY MODIFY THIS FILE!
+// This file has been automatically created by the command: gitversion version.h.in version.h
+
+#define MAJOR_VERSION      "$MAJOR_VERSION$"
+#define MINOR_VERSION      "$MINOR_VERSION$"
+#define REVISION           "$REVISION$"
+#define GIT_TAG_ONLY       "$GIT_TAG_ONLY$"
+#define GIT_TAG_HASH       "$GIT_TAG_HASH$"
+#define COMMITS_SINCE_TAG  "$COMMITS_SINCE_TAG$
+#define GIT_CURRENT_TAG    "$GIT_CURRENT_TAG$"
+#define GIT_CURRENT_HASH   "$GIT_CURRENT_HASH$"
+#define GIT_COMMITS_FLAG   "$GIT_COMMITS_FLAG$"
