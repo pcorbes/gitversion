@@ -66,19 +66,17 @@ IF EXIST %root_dir% (
 :: To get current tag
 :: git describe --tags
 :: git describe --tags --long | sed "s/v\([0-9]*\).*/\1/"
+:: git describe --tags --long --dirty | sed "s/v\([0-9]*\).*/\1/"
 
-FOR /F "tokens=1 delims=" %%A in ('"!git_bin!\git.exe" describe --tags --long') do SET current_tag=%%A
 ::!current_tag! 
+FOR /F "tokens=1 delims=" %%A in ('"!git_bin!\git.exe" describe --tags --long --dirty') do SET current_tag=%%A
 FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/\(v[0-9]*\.[0-9]*\.[0-9]*\)-[0-9]*-g.*/\1/"') do SET tag_only=%%A
 FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/v\([0-9]*\).*/\1/"') do SET major_version=%%A
 FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/v[0-9]*\.\([0-9]*\).*/\1/"') do SET minor_version=%%A
 FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/v[0-9]*\.[0-9]*\.\([0-9]*\).*/\1/"') do SET revision=%%A
 FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/v[0-9]*\.[0-9]*\.[0-9]*-\([0-9]*\).*/\1/"') do SET commits_since_tag=%%A
-FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\(.*\)/\1/"') do SET git_hash=%%A
+FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| sed "s/v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\([0-9a-f]*\).*/\1/"') do SET git_hash=%%A
 SET git_hash=!git_hash: =!
-FOR /F "tokens=1 delims=" %%A in ('"!git_bin!\git.exe" describe !tag_only! --tags --long') do SET git_tag_complete_with_hash=%%A
-FOR /F "tokens=1 delims=" %%A in ('echo !git_tag_complete_with_hash! ^| sed "s/v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\(.*\)/\1/"') do SET git_tag_hash=%%A
-SET git_tag_hash=!git_tag_hash: =!
 
 IF %commits_since_tag% == 0 (
   set git_commits=
@@ -86,17 +84,28 @@ IF %commits_since_tag% == 0 (
   set git_commits=+%commits_since_tag%
 )
 
+::!git_tag_complete_with_hash!
+FOR /F "tokens=1 delims=" %%A in ('"!git_bin!\git.exe" describe !tag_only! --tags --long') do SET git_tag_complete_with_hash=%%A
+FOR /F "tokens=1 delims=" %%A in ('echo !git_tag_complete_with_hash! ^| sed "s/v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\(.*\)/\1/"') do SET git_tag_hash=%%A
+SET git_tag_hash=!git_tag_hash: =!
+
+::!dirty_tag!
+FOR /F "tokens=1 delims=" %%A in ('echo !current_tag! ^| tr -d " \r\n" ^| sed "s/.*\(-dirty\).*/\1/"') do SET git_dirty=%%A
+IF [x%git_dirty%] NEQ [x-dirty] (
+  SET git_dirty=
+)
+
 @echo * Tags replaced in input file:
-@echo   $MAJOR_VERSION$:     !major_version!
-@echo   $MINOR_VERSION$:     !minor_version!
-@echo   $REVISION$:          !revision!
-@echo   $GIT_TAG_ONLY$:      !tag_only!
-@echo   $GIT_TAG_HASH$:      !git_tag_hash!
-@echo   $COMMITS_SINCE_TAG$: !commits_since_tag!
-@echo   $GIT_CURRENT_TAG$:   !current_tag!
-@echo   $GIT_CURRENT_HASH$:  !git_hash!
-@echo   $GIT_COMMITS_FLAG$:  !git_commits!
-@echo - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@echo   $MAJOR_VERSION$:     '!major_version!'
+@echo   $MINOR_VERSION$:     '!minor_version!'
+@echo   $REVISION$:          '!revision!'
+@echo   $GIT_TAG_ONLY$:      '!tag_only!'
+@echo   $GIT_TAG_HASH$:      '!git_tag_hash!'
+@echo   $COMMITS_SINCE_TAG$: '!commits_since_tag!'
+@echo   $GIT_CURRENT_TAG$:   '!current_tag!'
+@echo   $GIT_CURRENT_HASH$:  '!git_hash!'
+@echo   $GIT_COMMITS_FLAG$:  '!git_commits!'
+@echo   $GIT_DIRTY_FLAG$:    '!git_dirty!'
 
 :: skip the file transformation if no more parameters
 IF [x%2x] == [xx] IF [x%3x] == [xx] GOTO FINITO
@@ -131,6 +140,13 @@ IF [%3] NEQ [] (
   GOTO USAGE
 )
 
+@echo - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+:: get the old tag if exist
+IF EXIST .gitversion.dat (
+  for /f %%G in (.gitversion.dat) do (SET old_tag=%%G)
+)
+IF EXIST .gitversion.dat IF EXIST %3 IF [x!old_tag!x] == [x!current_tag!x] GOTO UPDATED
 
 @echo * Updating git version
 @echo -   Using git repository : !root_dir!
@@ -155,11 +171,19 @@ sed ^
 	-e "s/\$GIT_CURRENT_TAG\$/!current_tag!/g" ^
 	-e "s/\$GIT_CURRENT_HASH\$/!git_hash!/g" ^
 	-e "s/\$GIT_COMMITS_FLAG\$/!git_commits!/g" ^
+	-e "s/\$GIT_DIRTY_FLAG\$/!git_dirty!/g" ^
 	<%2 >%3
 
-@echo -------------------------------------------------------------------------------------------
-
+:: record the actual curent tag
+echo !current_tag! > .gitversion.dat
 GOTO FINITO
+
+:UPDATED
+REM @echo ===------------------------------------------------------------===
+@echo INFO: No need to update the output file: %3
+REM @echo ===------------------------------------------------------------===
+GOTO FINITO
+
 
 :USAGE
 @echo -------------------------------------------------------------------------------------------
@@ -181,9 +205,10 @@ GOTO FINITO
 @echo     $GIT_CURRENT_HASH$  - the current git tag hash 
 @echo                           (will be same as GIT_TAG_HASH if the current tag is checked out)
 @echo     $GIT_COMMITS_FLAG$  - Empty or +number_of_commits_since_last_tag
-@echo -------------------------------------------------------------------------------------------
+@echo     $GIT_DIRTY_FLAG$    - Empty or '-dirty' if not synchronized
 
 :FINITO
+@echo -------------------------------------------------------------------------------------------
 EndLocal&SET exit_code=!exit_code!
 popd
 exit /B !exit_code!
