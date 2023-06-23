@@ -1,3 +1,6 @@
+:: Git version script for Windows to extract and update source files
+:: Copyright (c) 2023 Philippe Corbes released under the MIT license
+
 @echo off
 @pushd .
 SETlocal enabledelayedexpansion
@@ -184,7 +187,7 @@ GOTO FINITO
 @echo     [GIT_TAG_HASH]      - git hash for the last git tag
 @echo     [COMMITS_SINCE_TAG] - number of commits since last tag
 @echo     [GIT_CURRENT_TAG]   - git current tag
-@echo     [GIT_CURRENT_HASH]  - the current git tag hash 
+@echo     [GIT_CURRENT_HASH]  - the current git tag hash
 @echo                           (will be same as GIT_TAG_HASH if the current tag is checked out)
 @echo     [GIT_COMMITS_FLAG]  - Empty or +number_of_commits_since_last_tag
 @echo     [GIT_DIRTY_FLAG]    - Empty or '-dirty' if not synchronized

@@ -1,5 +1,7 @@
 #!/bin/sh
-#
+# Git version script for Linux to extract and update source files
+# Copyright (c) 2023 Philippe Corbes released under the MIT license
+
 
 Usage()
 {
@@ -18,7 +20,7 @@ Usage()
 	echo -e "    [GIT_TAG_HASH]      - git hash for the last git tag"
 	echo -e "    [COMMITS_SINCE_TAG] - number of commits since last tag"
 	echo -e "    [GIT_CURRENT_TAG]   - git current tag"
-	echo -e "    [GIT_CURRENT_HASH]  - the current git tag hash "
+	echo -e "    [GIT_CURRENT_HASH]  - the current git tag hash"
 	echo -e "                          (will be same as GIT_TAG_HASH if the current tag is checked out)"
 	echo -e "    [GIT_COMMITS_FLAG]  - Empty or +number_of_commits_since_last_tag"
 	echo -e "    [GIT_DIRTY_FLAG]    - Empty or '-dirty' if not synchronized"
