@@ -131,10 +131,10 @@ if [ "x$2x" != "xx" ] || [ "x$3x" != "xx" ]; then
 				if [ "$3" != "$2" ]; then
 
 					# get the old tag if exist
-					if [ -f .gitversion.dat ]; then
-						old_tag=`cat .gitversion.dat`
+					if [ -f "$3.tag" ]; then
+						old_tag=`cat $3.tag`
 					fi
-					if [ -f ".gitversion.dat" ] && [ -f "$3" ] && [ "x${old_tag}x" == "x${current_tag}x" ]; then
+					if [ -f "$3" ] && [ -f "$3.tag" ] && [ "x${old_tag}x" == "x${current_tag}x" ]; then
 						echo "* No need to update the output file: $3"
 					else
 						echo "* Updating git version"
@@ -150,19 +150,19 @@ if [ "x$2x" != "xx" ] || [ "x$3x" != "xx" ]; then
 						# Replace parameters in file using sed
 						sed \
 							-e "s,\[MAJOR_VERSION\],${major_version},g" \
-						-e "s,\[MINOR_VERSION\],${minor_version},g" \
-						-e "s,\[REVISION\],${revision},g" \
-						-e "s,\[GIT_TAG_ONLY\],${tag_only},g" \
-						-e "s,\[GIT_TAG_HASH\],${git_tag_hash},g" \
-						-e "s,\[COMMITS_SINCE_TAG\],${commits_since_tag},g" \
-						-e "s,\[GIT_CURRENT_TAG\],${current_tag},g" \
-						-e "s,\[GIT_CURRENT_HASH\],${git_hash},g" \
-						-e "s,\[GIT_COMMITS_FLAG\],${git_commits},g" \
-						-e "s,\[GIT_DIRTY_FLAG\],${git_dirty},g" \
-						<$2 >$3
+							-e "s,\[MINOR_VERSION\],${minor_version},g" \
+							-e "s,\[REVISION\],${revision},g" \
+							-e "s,\[GIT_TAG_ONLY\],${tag_only},g" \
+							-e "s,\[GIT_TAG_HASH\],${git_tag_hash},g" \
+							-e "s,\[COMMITS_SINCE_TAG\],${commits_since_tag},g" \
+							-e "s,\[GIT_CURRENT_TAG\],${current_tag},g" \
+							-e "s,\[GIT_CURRENT_HASH\],${git_hash},g" \
+							-e "s,\[GIT_COMMITS_FLAG\],${git_commits},g" \
+							-e "s,\[GIT_DIRTY_FLAG\],${git_dirty},g" \
+							<$2 >$3
 
 						 # record the actual curent tag
-						 echo -n "${current_tag}" > .gitversion.dat
+						 echo -n "${current_tag}" > $3.tag
 					 fi
 				else
 					echo "ERROR: Input and ouput filename is equal!"
