@@ -91,16 +91,16 @@ IF [x%git_dirty%] NEQ [x-dirty] (
 )
 
 @echo * Tags replaced in input file:
-@echo   $MAJOR_VERSION$:     '!major_version!'
-@echo   $MINOR_VERSION$:     '!minor_version!'
-@echo   $REVISION$:          '!revision!'
-@echo   $GIT_TAG_ONLY$:      '!tag_only!'
-@echo   $GIT_TAG_HASH$:      '!git_tag_hash!'
-@echo   $COMMITS_SINCE_TAG$: '!commits_since_tag!'
-@echo   $GIT_CURRENT_TAG$:   '!current_tag!'
-@echo   $GIT_CURRENT_HASH$:  '!git_hash!'
-@echo   $GIT_COMMITS_FLAG$:  '!git_commits!'
-@echo   $GIT_DIRTY_FLAG$:    '!git_dirty!'
+@echo   [MAJOR_VERSION]:     '!major_version!'
+@echo   [MINOR_VERSION]:     '!minor_version!'
+@echo   [REVISION]:          '!revision!'
+@echo   [GIT_TAG_ONLY]:      '!tag_only!'
+@echo   [GIT_TAG_HASH]:      '!git_tag_hash!'
+@echo   [COMMITS_SINCE_TAG]: '!commits_since_tag!'
+@echo   [GIT_CURRENT_TAG]:   '!current_tag!'
+@echo   [GIT_CURRENT_HASH]:  '!git_hash!'
+@echo   [GIT_COMMITS_FLAG]:  '!git_commits!'
+@echo   [GIT_DIRTY_FLAG]:    '!git_dirty!'
 
 :: skip the file transformation if no more parameters
 IF [x%2x] == [xx] IF [x%3x] == [xx] GOTO FINITO
@@ -132,10 +132,11 @@ IF [%3] NEQ [] (
 )
 
 :: get the old tag if exist
-IF EXIST .gitversion.dat (
-  for /f %%G in (.gitversion.dat) do (SET old_tag=%%G)
+IF EXIST %3.tag (
+  for /f %%G in (%3.tag) do (SET old_tag=%%G)
 )
-IF EXIST .gitversion.dat IF EXIST %3 IF [x!old_tag!x] == [x!current_tag!x] GOTO UPDATED
+
+IF EXIST %3 IF EXIST %3.tag IF [x!old_tag!x] == [x!current_tag!x] GOTO UPDATED
 
 @echo * Updating git version
 @echo -   Using git repository : !root_dir!
@@ -149,20 +150,20 @@ IF EXIST %3 (
 
 :: Replace parameters in file using sed
 sed ^
-	-e "s,\[MAJOR_VERSION\],!major_version!/g" ^
-	-e "s,\[MINOR_VERSION\],!minor_version!/g" ^
-	-e "s,\[REVISION\],!revision!/g" ^
-	-e "s,\[GIT_TAG_ONLY\],!tag_only!/g" ^
-	-e "s,\[GIT_TAG_HASH\],!git_tag_hash!/g" ^
-	-e "s,\[COMMITS_SINCE_TAG\],!commits_since_tag!/g" ^
-	-e "s,\[GIT_CURRENT_TAG\],!current_tag!/g" ^
-	-e "s,\[GIT_CURRENT_HASH\],!git_hash!/g" ^
-	-e "s,\[GIT_COMMITS_FLAG\],!git_commits!/g" ^
-	-e "s,\[GIT_DIRTY_FLAG\],!git_dirty!/g" ^
+	-e "s,\[MAJOR_VERSION\],!major_version!,g" ^
+	-e "s,\[MINOR_VERSION\],!minor_version!,g" ^
+	-e "s,\[REVISION\],!revision!,g" ^
+	-e "s,\[GIT_TAG_ONLY\],!tag_only!,g" ^
+	-e "s,\[GIT_TAG_HASH\],!git_tag_hash!,g" ^
+	-e "s,\[COMMITS_SINCE_TAG\],!commits_since_tag!,g" ^
+	-e "s,\[GIT_CURRENT_TAG\],!current_tag!,g" ^
+	-e "s,\[GIT_CURRENT_HASH\],!git_hash!,g" ^
+	-e "s,\[GIT_COMMITS_FLAG\],!git_commits!,g" ^
+	-e "s,\[GIT_DIRTY_FLAG\],!git_dirty!,g" ^
 	<%2 >%3
 
 :: record the actual curent tag
-echo !current_tag! > .gitversion.dat
+echo !current_tag! > %3.tag
 GOTO FINITO
 
 :UPDATED
