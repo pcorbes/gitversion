@@ -3,13 +3,15 @@
 You need to have 'sed' and 'git' installed in order for this script to work.
 
 
-Your git tags must be in format "v1.0.123"
+Your git tags must be in format "1.0.123"
 
 1 is major version
 
 0 is minor version
 
 123 is revision number
+
+You can add before this number a string including lowercase, uppercase, '_', '+' and '-', (for example: "Version-0.1.2").
 
 ## Usage 
 <pre>
