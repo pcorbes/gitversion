@@ -10,7 +10,8 @@ Usage()
 	echo -e " example: gitversion.sh c:\my_git_repo version_input.h version.h"
 	echo -e " -"
 	echo -e " Important note: This expects tags to be in format: Anything else won't work. "
-	echo -e " v1.0.123 where 1 is major, 0 is minor and 123 is revision"
+	echo -e " [optional text including lowercase, uppercase, _, + and -]1.0.123 where 1 is major,"
+	echo -e " 0 is minor and 123 is revision."
 	echo -e " -"
 	echo -e " Tags replaced in input file:"
 	echo -e "    [MAJOR_VERSION]     - the major version number"
@@ -70,16 +71,16 @@ fi
 # To get current tag
 # git describe --tags
 # git describe --tags --long | sed "s,v\([0-9]*\).*,\1,"
-# git describe --tags --long --dirty | sed "s,v\([0-9]*\).*,\1,"
+# git describe --tags --long --dirty | sed "s,\([a-zA-Z0-9_+-]*\.[0-9]*\.[0-9]*\)-[0-9]*-g.*,\1,"
 
 # current_tag 
 current_tag=`git describe --tags --long --dirty`
-tag_only=`echo ${current_tag} | sed "s,\(v[0-9]*\.[0-9]*\.[0-9]*\)-[0-9]*-g.*,\1,"`
-major_version=`echo ${current_tag} | sed "s,v\([0-9]*\).*,\1,"`
-minor_version=`echo ${current_tag} | sed "s,v[0-9]*\.\([0-9]*\).*,\1,"`
-revision=`echo ${current_tag} | sed "s,v[0-9]*\.[0-9]*\.\([0-9]*\).*,\1,"`
-commits_since_tag=`echo ${current_tag} | sed "s,v[0-9]*\.[0-9]*\.[0-9]*-\([0-9]*\).*,\1,"`
-git_hash=`echo ${current_tag} | sed "s,v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\([0-9a-f]*\).*,\1,"`
+tag_only=`echo ${current_tag}			| sed "s,\([a-zA-Z0-9_+-]*\.[0-9]*\.[0-9]*\)-[0-9]*-g.*,\1,"`
+major_version=`echo ${current_tag}		| sed "s,[a-zA-Z_+-]*\([0-9]*\).*,\1,"`
+minor_version=`echo ${current_tag}		| sed "s,[a-zA-Z0-9_+-]*\.\([0-9]*\).*,\1,"`
+revision=`echo ${current_tag}			| sed "s,[a-zA-Z0-9_+-]*\.[0-9]*\.\([0-9]*\).*,\1,"`
+commits_since_tag=`echo ${current_tag}	| sed "s,[a-zA-Z0-9_+-]*\.[0-9]*\.[0-9]*-\([0-9]*\).*,\1,"`
+git_hash=`echo ${current_tag}			| sed "s,[a-zA-Z0-9_+-]*\.[0-9]*\.[0-9]*-[0-9]*-g\([0-9a-f]*\).*,\1,"`
 if [ "x$git_hash" == "x" ]; then
 	git_hash=" ="
 fi
@@ -91,7 +92,7 @@ fi
 
 # git_tag_complete_with_hash
 git_tag_complete_with_hash=`git describe ${tag_only} --tags --long`
-git_tag_hash=`echo ${git_tag_complete_with_hash} | sed "s,v[0-9]*\.[0-9]*\.[0-9]*-[0-9]*-g\(.*\),\1,"`
+git_tag_hash=`echo ${git_tag_complete_with_hash} | sed "s,[a-zA-Z0-9_+-]*\.[0-9]*\.[0-9]*-[0-9]*-g\(.*\),\1,"`
 if [ "x$git_tag_hash" == "x" ]; then
 	git_tag_hash=" ="
 fi
@@ -123,13 +124,10 @@ if [ "x$2x" != "xx" ] || [ "x$3x" != "xx" ]; then
 	if [ "x$2" != "x" ]; then
 		# verify that input file exists
 		if [ -e "$2" ]; then
-
 			# Preprocessing parameter 3
 			if [ "x$3" != "x" ]; then
-
 				# Check that input != output
 				if [ "$3" != "$2" ]; then
-
 					# get the old tag if exist
 					if [ -f "$3.tag" ]; then
 						old_tag=`cat $3.tag`
